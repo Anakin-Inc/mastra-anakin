@@ -1,0 +1,62 @@
+{
+  "name": "mastra-anakin",
+  "version": "0.1.0",
+  "description": "Anakin web scraping, AI search, and agentic research tools for Mastra agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "mastra",
+    "anakin",
+    "web-scraping",
+    "search",
+    "agentic-search",
+    "tools",
+    "ai-agent"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Anakin-Inc/mastra-anakin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Anakin-Inc/mastra-anakin/issues"
+  },
+  "homepage": "https://github.com/Anakin-Inc/mastra-anakin#readme",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "peerDependencies": {
+    "@mastra/core": ">=1.0.0-0 <2.0.0-0",
+    "zod": "^3.25.0 || ^4.0.0"
+  },
+  "devDependencies": {
+    "@mastra/core": "^1.53.0",
+    "typescript": "^5.9.3",
+    "tsup": "^8.5.1",
+    "vitest": "^4.1.10",
+    "zod": "^4.4.3"
+  }
+}
