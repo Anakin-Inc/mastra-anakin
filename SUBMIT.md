@@ -9,20 +9,77 @@ distribution path" below.
 ## What's here
 
 ```
-src/client.ts            getAnakinClient() — shared fetch wrapper: X-API-Key header, submitAndPoll() helper
-src/urlScraper.ts         createAnakinUrlScraperTool()
-src/search.ts              createAnakinSearchTool()
-src/agenticSearch.ts       createAnakinAgenticSearchTool()
-src/tools.ts                createAnakinTools() — bundles all three
-src/index.ts                 public exports
-src/__tests__/*.test.ts       vitest, 21 tests, mocks fetch and @mastra/core/tools
+src/client.ts                 getAnakinClient() — shared fetch wrapper: X-API-Key header,
+                               submitAndPoll() + pollUntil() helpers, withQuery(), del()
+src/urlScraper.ts              createAnakinUrlScraperTool()
+src/search.ts                   createAnakinSearchTool()
+src/agenticSearch.ts            createAnakinAgenticSearchTool()
+src/map.ts                       createAnakinMapTool()
+src/crawl.ts                      createAnakinCrawlTool()
+src/wireDiscover.ts                createAnakinWireDiscoverTool()
+src/wireCatalog.ts                  createAnakinWireCatalogTool()
+src/wireActionShared.ts              shared input/output schema + POST /wire/task execution
+src/wireReadAction.ts                 createAnakinWireReadActionTool()
+src/wireWriteAction.ts                 createAnakinWireWriteActionTool()
+src/wireIdentities.ts                   createAnakinWireIdentitiesTool()
+src/wireLogin.ts                         createAnakinWireLoginTool()
+src/wireBuild.ts                          createAnakinWireBuildTool()
+src/monitorShared.ts                       redactSecrets() — strips alertWebhookSecret
+src/monitorCreate.ts                        createAnakinMonitorCreateTool()
+src/monitorList.ts                           createAnakinMonitorListTool()
+src/monitorChanges.ts                         createAnakinMonitorChangesTool()
+src/monitorControl.ts                          createAnakinMonitorControlTool()
+src/aiVisibilitySearch.ts                       createAnakinAiVisibilitySearchTool()
+src/aiVisibilitySources.ts                       createAnakinAiVisibilitySourcesTool()
+src/sessionList.ts                                createAnakinSessionListTool()
+src/sessionDelete.ts                               createAnakinSessionDeleteTool()
+src/browserTask.ts                                  createAnakinBrowserTaskTool()
+src/tools.ts                                         createAnakinTools() — bundles all 21
+src/index.ts                                          public exports
+src/__tests__/*.test.ts                                vitest, 80 tests across 23 files,
+                                                        mocks fetch and @mastra/core/tools
 package.json, tsconfig.json, tsup.config.ts
 ```
 
-This picks up a prior in-session attempt that had already written all of the
-above and run a build once (a `dist/` existed) but stalled before writing
-README.md/SUBMIT.md or re-confirming its own claims. Everything below was
-re-verified directly in this pass, not trusted from that attempt's report.
+This picks up a prior in-session attempt that had already written the first
+3 tools (`urlScraper`/`search`/`agenticSearch`) and run a build once (a
+`dist/` existed) but stalled before writing README.md/SUBMIT.md or
+re-confirming its own claims — see "Coverage: 21 of 21 endpoints" below for
+what this pass added on top of that. Everything under "Verified in this
+pass" was re-verified directly, not trusted from that attempt's report.
+
+## Coverage: 21 of 21 Anakin endpoints
+
+Every endpoint documented in `anakin-mcp/src/client.ts` (the ground-truth
+Anakin API client this session's other integrations were built against) now
+has a `createTool()` wrapper — see the table in `README.md`. All 21 fit
+Mastra's `createTool()` model as either a single request or a submit-then-poll
+job; none were excluded. Three things needed genuine (backward-compatible)
+extension of `src/client.ts` to support the newer tools honestly rather than
+forcing them through the original `submitAndPoll()`, which was built only
+for the scrape/agentic-search shape (submit response carries
+`jobId`/`job_id`/`id`, poll the same path prefix, terminal on
+completed/failed):
+
+1. **`pollUntil(path, isDone)`** — a lower-level poller (the same
+   exponential-backoff loop `submitAndPoll` now delegates to internally) for
+   jobs whose id field or terminal condition differs: Wire tasks
+   (`job_id`, may finish inline with no id at all), AI Visibility searches
+   (`search_id`, terminal on anything but "running", doesn't throw on
+   "failed"), browser tasks (`workflow_id`, extra `timed_out` terminal
+   state).
+2. **`del(path)`** — the original client only had `post`/`get`;
+   `anakin-session-delete` and `anakin-monitor-control`'s `delete` action
+   both need a real `DELETE` request.
+3. **`withQuery(path, params)`** — a small query-string builder (mirrors
+   `anakin-mcp/src/client.ts`'s own helper of the same name) for the several
+   `GET` endpoints that take query params (`wire/resolve`, `wire/identities`,
+   `sessions`).
+
+`src/__tests__/client.test.ts`'s existing `submitAndPoll` tests and the
+`post`/`get` tests all still pass unmodified against the refactored client —
+the public contract (`post`, `get`, `submitAndPoll`) didn't change behavior,
+only grew.
 
 ## Real Mastra structure confirmed, not assumed
 
@@ -75,37 +132,72 @@ Dagster/Coda for this platform today.
 
 ## Verified in this pass, not assumed
 
-- **`npx tsc --noEmit`** — clean, zero errors. Re-run directly in this pass
-  (not trusted from the prior attempt's claim).
-- **`npx vitest run`** — 21/21 tests pass across 5 test files (`client`,
-  `urlScraper`, `search`, `agenticSearch`, `tools`), ~300ms total.
-- **`npx tsup`** — real rebuild (deleted the prior attempt's `dist/` and
-  rebuilt from scratch): ESM + CJS + `.d.ts`/`.d.cts` output, succeeds in
-  under 2 seconds.
+- **`npx tsc --noEmit`** — clean, zero errors, both before this pass's
+  changes (baseline re-confirmed) and after all 18 new tools + the
+  `client.ts` extension landed.
+- **`npx vitest run`** — 80/80 tests pass across 23 test files (the original
+  5 — `client`, `urlScraper`, `search`, `agenticSearch`, `tools` — plus one
+  new file per added tool), ~500ms total.
+- **`npx tsup`** — real rebuild: ESM + CJS + `.d.ts`/`.d.cts` output,
+  succeeds in ~1.3s (`dist/index.js` 46.7KB, `dist/index.cjs` 48.8KB,
+  `dist/index.d.ts` 25.5KB).
 - None of the above hung or came close to the ~2 minute budget.
   `node_modules` was already installed from the prior attempt (280 packages
   present — `vitest`, `tsup`, `@mastra/core`, `zod` all resolve); a fresh
   `npm install` was not re-run since it wasn't needed to verify
-  typecheck/test/build, and re-running it risked repeating whatever caused
-  the prior attempt's 10-minute stall. Everything that *was* run this pass
-  completed fast and cleanly — the prior stall, whatever its cause, was not
-  in `tsc`/`vitest`/`tsup`.
+  typecheck/test/build. Everything run this pass completed fast and cleanly.
+- Every new tool's execute path is covered by a test that mocks `fetch` and
+  asserts the real request shape (method, URL, body) sent to
+  `api.anakin.io` — not just that the tool object has an id/description.
+  This caught one real bug during development: `anakin-browser-task`'s sync
+  (no-`workflow_id`) fallback path was initially unwrapping `.result` off
+  the raw response the same way the polled/async path does, which is wrong
+  — the sync response *is* the `BrowserTaskResult` already, not a job
+  envelope wrapping one. Fixed and covered by a regression test
+  (`browserTask.test.ts`, "returns the response inline when the service
+  answers synchronously").
 
 ## Not done / not verified
 
 - No live call against the real `api.anakin.io` API (unlike the Coda
   submission, which got a real 401 round-trip confirming endpoint paths and
-  headers). Request/response shapes were built by reading `anakin-py`'s
-  `client.py`/`models.py` field names directly (mapping below), not observed
-  from a live response.
+  headers). Request/response shapes for `urlScraper`/`search`/`agenticSearch`
+  were built by reading `anakin-py`'s `client.py`/`models.py` field names
+  directly; request shapes and endpoint paths for the 18 tools added this
+  pass were built by reading `anakin-mcp/src/client.ts` and
+  `anakin-mcp/src/tools/*.ts` directly (the task's specified ground truth).
+  None of it was observed from a live response — see "loosely-typed vs.
+  strict output schemas" in `README.md` for how that shaped which
+  `outputSchema`s are precise vs. deliberately permissive.
 - `npm publish` never run — no npm account/token in this environment, and
   per the standing autonomy rules this needs the account owner regardless.
 - `tsai-registry.dev`'s actual submission mechanics unconfirmed.
-- Whether Anakin's real job latency for `url-scraper`/`agentic-search`
-  routinely fits under the default 120s poll budget in `client.ts` is
-  unverified — no live jobs were run. If real p95 latency exceeds that, the
-  fix is raising `pollTimeoutMs` (a caller-supplied config value, not a hard
-  limit), which is a materially easier fix than Coda's ~60s hard ceiling.
+- Whether Anakin's real job latency for any of the async tools routinely
+  fits under the default 120s poll budget in `client.ts` is unverified — no
+  live jobs were run. If real p95 latency exceeds that, the fix is raising
+  `pollTimeoutMs` (a caller-supplied config value, not a hard limit), which
+  is a materially easier fix than Coda's ~60s hard ceiling. `browser_task` in
+  particular is documented server-side as running up to ~330s, comfortably
+  past the 120s default — callers doing browser-automation work should raise
+  `pollTimeoutMs` accordingly (called out in README's Polling section).
+- Wire's `wire_read_action`/`wire_write_action` do not replicate
+  `anakin-mcp`'s `authGuidance()` behavior (turning `AUTH_REQUIRED` /
+  `AUTH_EXPIRED` / `FORBIDDEN` errors into actionable next-step text with a
+  `connect_url`). This package's `client.ts` is deliberately minimal (plain
+  `Error` with a parsed message, no structured `AnakinError` with
+  `code`/`details` the way `anakin-mcp/src/client.ts` has) — reproducing
+  that guidance would mean adding a structured error type to the shared
+  client for one tool family's benefit. Left as a follow-up if Wire error
+  handling turns out to matter in practice; the underlying error's message
+  still surfaces via a plain thrown `Error`.
+- Wire write actions / `wire_build` / `browser_task` do not replicate
+  `anakin-mcp`'s Connectors-Directory-specific `financialBlockReason()`
+  policy filter (refusing payment/fund-transfer instructions). That policy
+  exists because Anthropic's Connectors Directory requires it for MCP
+  servers; it isn't a documented Mastra or npm-package requirement, so it
+  wasn't carried over — each such tool's description does flag the
+  destructive/side-effecting nature of the call instead, so the calling
+  agent/human is expected to gate it.
 
 ## Field-by-field shape source
 
@@ -121,6 +213,22 @@ does on the Python side). The submit/poll request bodies mirror
 agentic search) and the job-id fallback chain (`jobId` / `job_id` / `id`) and
 terminal-status check (`status in {"completed", "failed"}`) both source
 files use.
+
+The 18 tools added this pass (`map`, `crawl`, and the Wire/monitor/AI
+visibility/session/browser-task families) mirror `anakin-mcp/src/client.ts`
+directly instead: its exported interfaces (`MapOptions`/`MapResult`,
+`CrawlOptions`/`CrawlResult`, `WireRunOptions`/`WireJobStatus`,
+`WireResolveResponse`, `WireLoginRequest`, `WireBuildRequest`,
+`MonitorCreateOptions`, `AIVisibilitySearchOptions`/`AIVisibilitySearch`,
+`BrowserTaskOptions`/`BrowserTaskResult`) for field names and defaults, and
+its method bodies (`map()`, `crawl()`, `wireResolve()`, `wireCatalog()`,
+`wireRun()`/`pollWireJob()`, `wireIdentities()`, `wireLogin()`, `wireBuild()`,
+`monitorCreate()`/`monitorList()`/`monitorGet()`/`monitorChanges()`/
+`monitorControl()`, `aiVisibilitySearch()`, `aiVisibilitySources()`,
+`sessionsList()`/`sessionDelete()`, `browserTask()`) for endpoint paths,
+default values, and the exact submit/poll/terminal-state shape each endpoint
+uses (documented per-tool in this pass's `client.ts` extension and echoed in
+each tool file's `description`).
 
 ## On "5 packages, curated"
 

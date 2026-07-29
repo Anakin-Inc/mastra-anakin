@@ -6,35 +6,51 @@ vi.mock('@mastra/core/tools', () => ({
 
 import { createAnakinTools } from '../tools.js';
 
+const EXPECTED_IDS: Record<string, string> = {
+  urlScraper: 'anakin-url-scraper',
+  search: 'anakin-search',
+  agenticSearch: 'anakin-agentic-search',
+  map: 'anakin-map',
+  crawl: 'anakin-crawl',
+  wireDiscover: 'anakin-wire-discover',
+  wireCatalog: 'anakin-wire-catalog',
+  wireReadAction: 'anakin-wire-read-action',
+  wireWriteAction: 'anakin-wire-write-action',
+  wireIdentities: 'anakin-wire-identities',
+  wireLogin: 'anakin-wire-login',
+  wireBuild: 'anakin-wire-build',
+  monitorCreate: 'anakin-monitor-create',
+  monitorList: 'anakin-monitor-list',
+  monitorChanges: 'anakin-monitor-changes',
+  monitorControl: 'anakin-monitor-control',
+  aiVisibilitySearch: 'anakin-ai-visibility-search',
+  aiVisibilitySources: 'anakin-ai-visibility-sources',
+  sessionList: 'anakin-session-list',
+  sessionDelete: 'anakin-session-delete',
+  browserTask: 'anakin-browser-task',
+};
+
 describe('createAnakinTools', () => {
-  it('should return all three tools', () => {
+  it('returns all 21 tools', () => {
     const tools = createAnakinTools({ apiKey: 'test-key' });
-
-    expect(tools.urlScraper).toBeDefined();
-    expect(tools.search).toBeDefined();
-    expect(tools.agenticSearch).toBeDefined();
+    expect(Object.keys(tools).sort()).toEqual(Object.keys(EXPECTED_IDS).sort());
   });
 
-  it('should create tools with correct ids', () => {
-    const tools = createAnakinTools({ apiKey: 'test-key' });
-
-    expect(tools.urlScraper.id).toBe('anakin-url-scraper');
-    expect(tools.search.id).toBe('anakin-search');
-    expect(tools.agenticSearch.id).toBe('anakin-agentic-search');
+  it('creates tools with the correct ids', () => {
+    const tools = createAnakinTools({ apiKey: 'test-key' }) as Record<string, { id: string }>;
+    for (const [key, expectedId] of Object.entries(EXPECTED_IDS)) {
+      expect(tools[key]?.id).toBe(expectedId);
+    }
   });
 
-  it('should create tools that all have descriptions', () => {
+  it('creates tools that all have descriptions and schemas', () => {
     const tools = createAnakinTools({ apiKey: 'test-key' });
-
-    expect(tools.urlScraper.description).toBeTruthy();
-    expect(tools.search.description).toBeTruthy();
-    expect(tools.agenticSearch.description).toBeTruthy();
-  });
-
-  it('should create tools that all have input and output schemas', () => {
-    const tools = createAnakinTools({ apiKey: 'test-key' });
-
-    for (const tool of Object.values(tools)) {
+    for (const tool of Object.values(tools) as Array<{
+      description?: string;
+      inputSchema?: unknown;
+      outputSchema?: unknown;
+    }>) {
+      expect(tool.description).toBeTruthy();
       expect(tool.inputSchema).toBeDefined();
       expect(tool.outputSchema).toBeDefined();
     }
