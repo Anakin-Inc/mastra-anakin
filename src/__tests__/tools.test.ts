@@ -4,7 +4,7 @@ vi.mock('@mastra/core/tools', () => ({
   createTool: vi.fn(config => config),
 }));
 
-import { createAnakinTools } from '../tools.js';
+import { createAnakinReadOnlyTools, createAnakinTools } from '../tools.js';
 
 const EXPECTED_IDS: Record<string, string> = {
   urlScraper: 'anakin-url-scraper',
@@ -19,6 +19,7 @@ const EXPECTED_IDS: Record<string, string> = {
   wireIdentities: 'anakin-wire-identities',
   wireLogin: 'anakin-wire-login',
   wireBuild: 'anakin-wire-build',
+  wireBuildStatus: 'anakin-wire-build-status',
   monitorCreate: 'anakin-monitor-create',
   monitorList: 'anakin-monitor-list',
   monitorChanges: 'anakin-monitor-changes',
@@ -31,7 +32,7 @@ const EXPECTED_IDS: Record<string, string> = {
 };
 
 describe('createAnakinTools', () => {
-  it('returns all 21 tools', () => {
+  it('returns all 22 tools', () => {
     const tools = createAnakinTools({ apiKey: 'test-key' });
     expect(Object.keys(tools).sort()).toEqual(Object.keys(EXPECTED_IDS).sort());
   });
@@ -53,6 +54,24 @@ describe('createAnakinTools', () => {
       expect(tool.description).toBeTruthy();
       expect(tool.inputSchema).toBeDefined();
       expect(tool.outputSchema).toBeDefined();
+    }
+  });
+});
+
+describe('createAnakinReadOnlyTools', () => {
+  it('leaves out the 7 tools that change state', () => {
+    const tools = createAnakinReadOnlyTools({ apiKey: 'test-key' });
+    expect(Object.keys(tools)).toHaveLength(15);
+    for (const key of [
+      'wireWriteAction',
+      'wireLogin',
+      'wireBuild',
+      'monitorCreate',
+      'monitorControl',
+      'sessionDelete',
+      'browserTask',
+    ]) {
+      expect(tools).not.toHaveProperty(key);
     }
   });
 });
