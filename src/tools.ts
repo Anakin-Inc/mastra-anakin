@@ -14,6 +14,7 @@ import { createAnakinSessionDeleteTool } from './sessionDelete.js';
 import { createAnakinSessionListTool } from './sessionList.js';
 import { createAnakinUrlScraperTool } from './urlScraper.js';
 import { createAnakinWireBuildTool } from './wireBuild.js';
+import { createAnakinWireBuildStatusTool } from './wireBuildStatus.js';
 import { createAnakinWireCatalogTool } from './wireCatalog.js';
 import { createAnakinWireDiscoverTool } from './wireDiscover.js';
 import { createAnakinWireIdentitiesTool } from './wireIdentities.js';
@@ -21,7 +22,12 @@ import { createAnakinWireLoginTool } from './wireLogin.js';
 import { createAnakinWireReadActionTool } from './wireReadAction.js';
 import { createAnakinWireWriteActionTool } from './wireWriteAction.js';
 
-export function createAnakinTools(config?: AnakinClientOptions) {
+/**
+ * The 15 tools that only read data. None of them changes anything on a website
+ * or in the Anakin account (no state-changing site actions, logins, builds,
+ * monitor changes, deletions or browser tasks). They do spend credits.
+ */
+export function createAnakinReadOnlyTools(config?: AnakinClientOptions) {
   return {
     urlScraper: createAnakinUrlScraperTool(config),
     search: createAnakinSearchTool(config),
@@ -31,17 +37,25 @@ export function createAnakinTools(config?: AnakinClientOptions) {
     wireDiscover: createAnakinWireDiscoverTool(config),
     wireCatalog: createAnakinWireCatalogTool(config),
     wireReadAction: createAnakinWireReadActionTool(config),
-    wireWriteAction: createAnakinWireWriteActionTool(config),
     wireIdentities: createAnakinWireIdentitiesTool(config),
-    wireLogin: createAnakinWireLoginTool(config),
-    wireBuild: createAnakinWireBuildTool(config),
-    monitorCreate: createAnakinMonitorCreateTool(config),
+    wireBuildStatus: createAnakinWireBuildStatusTool(config),
     monitorList: createAnakinMonitorListTool(config),
     monitorChanges: createAnakinMonitorChangesTool(config),
-    monitorControl: createAnakinMonitorControlTool(config),
     aiVisibilitySearch: createAnakinAiVisibilitySearchTool(config),
     aiVisibilitySources: createAnakinAiVisibilitySourcesTool(config),
     sessionList: createAnakinSessionListTool(config),
+  };
+}
+
+/** All 22 tools, including the 7 that change state on a website or in the Anakin account. */
+export function createAnakinTools(config?: AnakinClientOptions) {
+  return {
+    ...createAnakinReadOnlyTools(config),
+    wireWriteAction: createAnakinWireWriteActionTool(config),
+    wireLogin: createAnakinWireLoginTool(config),
+    wireBuild: createAnakinWireBuildTool(config),
+    monitorCreate: createAnakinMonitorCreateTool(config),
+    monitorControl: createAnakinMonitorControlTool(config),
     sessionDelete: createAnakinSessionDeleteTool(config),
     browserTask: createAnakinBrowserTaskTool(config),
   };

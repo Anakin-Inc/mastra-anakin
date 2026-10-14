@@ -1,13 +1,16 @@
 {
-  "name": "mastra-anakin",
+  "name": "@anakin-io/mastra",
   "version": "0.1.0",
-  "description": "Anakin web scraping, AI search, and agentic research tools for Mastra agents",
+  "description": "Anakin web data tools for Mastra agents: scrape, crawl, map, search, agentic research, Wire site actions, monitors and browser tasks",
   "type": "module",
   "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "CHANGELOG.md"
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -16,7 +19,7 @@
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
     },
@@ -25,16 +28,22 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "lint": "eslint .",
+    "test": "vitest run",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build && npm run typecheck:examples",
+    "smoke": "node scripts/smoke.mjs",
+    "typecheck:examples": "tsc -p tsconfig.examples.json"
   },
   "keywords": [
     "mastra",
+    "mastra-tools",
     "anakin",
     "web-scraping",
+    "crawler",
     "search",
     "agentic-search",
-    "tools",
-    "ai-agent"
+    "ai-agent",
+    "tools"
   ],
   "license": "Apache-2.0",
   "repository": {
@@ -44,19 +53,28 @@
   "bugs": {
     "url": "https://github.com/Anakin-Inc/mastra-anakin/issues"
   },
-  "homepage": "https://github.com/Anakin-Inc/mastra-anakin#readme",
+  "homepage": "https://anakin.io/docs/integrations/ai-frameworks/mastra",
   "engines": {
     "node": ">=22.13.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "peerDependencies": {
     "@mastra/core": ">=1.0.0-0 <2.0.0-0",
     "zod": "^3.25.0 || ^4.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@mastra/core": "^1.53.0",
-    "typescript": "^5.9.3",
+    "@types/node": "^22.20.5",
+    "eslint": "^9.39.5",
     "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.2",
     "vitest": "^4.1.10",
     "zod": "^4.4.3"
-  }
+  },
+  "sideEffects": false
 }

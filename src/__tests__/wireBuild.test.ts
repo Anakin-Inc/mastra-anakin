@@ -56,4 +56,28 @@ describe('createAnakinWireBuildTool', () => {
     const submitBody = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(submitBody).toMatchObject({ visibility: 'public', force: true });
   });
+
+  it('forwards actions, country, and credential when provided', async () => {
+    fetchMock.mockResolvedValueOnce(Response.json({ status: 'ok', build_request: { id: 'br_1', status: 'pending' } }));
+
+    const tool = createAnakinWireBuildTool({ apiKey: 'test-key' });
+    const credential = { type: 'plain', username: 'u@example.com', password: 'pw' };
+    await tool.execute!(
+      {
+        website_url: 'https://newsite.example.com',
+        goal: 'extract prices',
+        actions: ['search products', 'get product details'],
+        country: 'US',
+        credential,
+      } as any,
+      {} as any,
+    );
+
+    const submitBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(submitBody).toMatchObject({
+      actions: ['search products', 'get product details'],
+      country: 'US',
+      credential,
+    });
+  });
 });
